@@ -146,7 +146,11 @@ namespace St10443034Part2
                     Console.ResetColor();
                 }
 
- 
+                // Personalised response
+                if (!string.IsNullOrEmpty(favouriteTopic) && !input.Contains(favouriteTopic))
+                {
+                    response += $"\nAs someone interested in {favouriteTopic}, always keep learning about that topic.";
+                }
 
                 Console.ForegroundColor = ConsoleColor.Green;
                 Console.Write("Bot: ");
