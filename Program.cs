@@ -138,7 +138,15 @@ namespace St10443034Part2
                     Console.ResetColor();
                 }
 
-                
+                // Sentiment detection handling
+                if (!string.IsNullOrEmpty(sentiment))
+                {
+                    Console.ForegroundColor = ConsoleColor.Magenta;
+                    Console.WriteLine($"[Mood Detected: {sentiment}]");
+                    Console.ResetColor();
+                }
+
+ 
 
                 Console.ForegroundColor = ConsoleColor.Green;
                 Console.Write("Bot: ");
