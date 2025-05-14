@@ -5,7 +5,7 @@ using System.Media;
 using System.Speech.Synthesis;
 using System.Threading;
 
-namespace St10443034Part2
+namespace St10443034ChatbotP2
 {
     internal class Program
     {
