@@ -14,6 +14,7 @@ namespace St10443034ChatbotP2
         private static string favouriteTopic = "";
         private static bool useVoice = true;
         private static bool useSoundEffects = true;
+        private static string lastTopic = "";
 
         static void Main(string[] args)
         {
@@ -32,19 +33,8 @@ namespace St10443034ChatbotP2
 
         static void PlayVoiceGreeting()
         {
-            try
-            {
-                if (useSoundEffects) SystemSounds.Beep.Play();
-
-                if (useVoice)
-                {
-                    synth.Speak("Hello! Welcome to the Cybersecurity Awareness Bot. I'm here to help you stay safe online.");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error playing voice greeting: " + ex.Message);
-            }
+            if (useSoundEffects) SystemSounds.Beep.Play();
+            if (useVoice) synth.Speak("Hello! Welcome to the Cybersecurity Awareness Bot. I'm here to help you stay safe online.");
         }
 
         private static void DisplayWelcomeScreen()
@@ -61,7 +51,6 @@ namespace St10443034ChatbotP2
             Console.ForegroundColor = ConsoleColor.Blue;
             Console.WriteLine(@"         |___/                                          ");
             Console.ResetColor();
-
             Console.ForegroundColor = ConsoleColor.Magenta;
             Console.WriteLine("\n==================================================================");
             Console.WriteLine("|              CYBERSECURITY AWARENESS CHATBOT                   |");
@@ -75,7 +64,6 @@ namespace St10443034ChatbotP2
             Console.ForegroundColor = ConsoleColor.Yellow;
             Console.Write("\nWhat's your name? ");
             Console.ResetColor();
-
             userName = Console.ReadLine();
 
             while (string.IsNullOrWhiteSpace(userName))
@@ -90,16 +78,12 @@ namespace St10443034ChatbotP2
             Console.WriteLine($"\nHello {userName}! Let's talk about cybersecurity.");
             Console.ResetColor();
 
-            if (useVoice)
-            {
-                synth.Speak($"Hello {userName}, let's talk about cybersecurity.");
-            }
+            if (useVoice) synth.Speak($"Hello {userName}, let's talk about cybersecurity.");
         }
 
         private static void RunChatbot()
         {
             var chatbot = new CyberSecurityChatbot();
-
             DisplayHelp();
 
             while (true)
@@ -108,7 +92,7 @@ namespace St10443034ChatbotP2
                 Console.Write($"\n{userName}: ");
                 Console.ResetColor();
 
-                var input = Console.ReadLine();
+                var input = Console.ReadLine()?.ToLower().Trim();
                 if (string.IsNullOrWhiteSpace(input))
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
@@ -117,10 +101,7 @@ namespace St10443034ChatbotP2
                     continue;
                 }
 
-                input = input.ToLower();
-
                 if (input == "exit") break;
-
                 if (input == "help")
                 {
                     DisplayHelp();
@@ -129,16 +110,21 @@ namespace St10443034ChatbotP2
 
                 string response = chatbot.GetResponse(input, out string topicDetected, out string sentiment);
 
-                // Memory: Save favourite topic if detected
-                if (!string.IsNullOrEmpty(topicDetected) && string.IsNullOrEmpty(favouriteTopic))
+                // Memory
+                if (!string.IsNullOrEmpty(topicDetected))
                 {
-                    favouriteTopic = topicDetected;
-                    Console.ForegroundColor = ConsoleColor.Cyan;
-                    Console.WriteLine($"[Memory] Noted that you're interested in {favouriteTopic}.");
-                    Console.ResetColor();
+                    lastTopic = topicDetected;
+
+                    if (string.IsNullOrEmpty(favouriteTopic))
+                    {
+                        favouriteTopic = topicDetected;
+                        Console.ForegroundColor = ConsoleColor.Cyan;
+                        Console.WriteLine($"[Memory] Noted that you're interested in {favouriteTopic}.");
+                        Console.ResetColor();
+                    }
                 }
 
-                // Sentiment detection handling
+                // Sentiment detection
                 if (!string.IsNullOrEmpty(sentiment))
                 {
                     Console.ForegroundColor = ConsoleColor.Magenta;
@@ -146,10 +132,10 @@ namespace St10443034ChatbotP2
                     Console.ResetColor();
                 }
 
-                // Personalised response
-                if (!string.IsNullOrEmpty(favouriteTopic) && !input.Contains(favouriteTopic))
+                // Personalized tip
+                if (!string.IsNullOrEmpty(favouriteTopic) && input != "help" && !input.Contains(favouriteTopic))
                 {
-                    response += $"\nAs someone interested in {favouriteTopic}, always keep learning about that topic.";
+                    response += $"\nAs someone interested in {favouriteTopic}, you should explore this further!";
                 }
 
                 Console.ForegroundColor = ConsoleColor.Green;
@@ -188,42 +174,45 @@ namespace St10443034ChatbotP2
 
     public class CyberSecurityChatbot
     {
-        private Dictionary<string, List<string>> keywordResponses = new Dictionary<string, List<string>>();
-        private Dictionary<string, string> sentiments = new Dictionary<string, string>();
+        private readonly Dictionary<string, List<string>> keywordResponses;
+        private readonly Dictionary<string, string> sentiments;
 
         public CyberSecurityChatbot()
         {
-            keywordResponses["password"] = new List<string>
+            keywordResponses = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase)
             {
-                "Use strong and unique passwords with letters, numbers, and symbols.",
-                "Avoid using personal info in your passwords and update them regularly.",
-                "Consider a password manager to keep track of different passwords securely."
+                ["password"] = new List<string>
+                {
+                    "Use strong and unique passwords with letters, numbers, and symbols.",
+                    "Avoid using personal info in your passwords and update them regularly.",
+                    "Consider using a password manager to keep your credentials safe."
+                },
+                ["phishing"] = new List<string>
+                {
+                    "Phishing emails often pretend to be from banks—double-check the sender!",
+                    "Never click suspicious links. Always verify before taking action.",
+                    "Use multi-factor authentication to reduce phishing risks."
+                },
+                ["privacy"] = new List<string>
+                {
+                    "Review your privacy settings on all your online accounts regularly.",
+                    "Be cautious of the personal information you share online.",
+                    "Use encrypted communication tools for more secure chats."
+                },
+                ["scam"] = new List<string>
+                {
+                    "Watch out for messages asking for urgent payments or gift cards.",
+                    "Always verify unknown callers and emails before responding.",
+                    "Scams often involve emotional manipulation—stay calm and verify."
+                }
             };
 
-            keywordResponses["phishing"] = new List<string>
+            sentiments = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
-                "Phishing emails often pretend to be from banks—double-check the sender!",
-                "Never click suspicious links. Always verify before taking action.",
-                "Use multi-factor authentication to reduce damage from phishing attacks."
+                ["worried"] = "It's okay to feel that way. Cybersecurity can seem overwhelming, but I'm here to guide you.",
+                ["curious"] = "That’s great! Curiosity is key to learning more about online safety.",
+                ["frustrated"] = "Don't worry, you're not alone. Many people feel this way when starting to learn cybersecurity."
             };
-
-            keywordResponses["privacy"] = new List<string>
-            {
-                "Review your privacy settings on all social media platforms.",
-                "Be mindful of what you post publicly online.",
-                "Use encrypted communication apps to enhance your privacy."
-            };
-
-            keywordResponses["scam"] = new List<string>
-            {
-                "Scams can be very convincing. Always verify requests before responding.",
-                "If it sounds too good to be true, it probably is.",
-                "Block and report scam messages immediately."
-            };
-
-            sentiments["worried"] = "It's completely understandable to feel that way. Let's look at some tips to ease your concerns.";
-            sentiments["frustrated"] = "Sorry to hear that. Cybersecurity can be confusing, but I'm here to help.";
-            sentiments["curious"] = "That's great! Curiosity is the first step to learning how to stay safe online.";
         }
 
         public string GetResponse(string userInput, out string topicDetected, out string sentimentDetected)
@@ -242,18 +231,17 @@ namespace St10443034ChatbotP2
             }
 
             // Keyword Recognition
-            foreach (var keyword in keywordResponses.Keys)
+            foreach (var entry in keywordResponses)
             {
-                if (userInput.Contains(keyword))
+                if (userInput.Contains(entry.Key))
                 {
-                    topicDetected = keyword;
-                    var responses = keywordResponses[keyword];
-                    var random = new Random();
-                    return responses[random.Next(responses.Count)];
+                    topicDetected = entry.Key;
+                    var responses = entry.Value;
+                    return responses[new Random().Next(responses.Count)];
                 }
             }
 
-            return "I'm not sure I understand. Can you try rephrasing or type 'help' to see the list of topics I cover?";
+            return "I'm not sure I understand. Could you try rephrasing or type 'help' for suggestions?";
         }
     }
 }
